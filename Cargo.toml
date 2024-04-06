@@ -13,4 +13,4 @@ categories = ["command-line-utilities", "virtualization"]
 [dependencies]
 thiserror = "1"
 xdg = "2"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive", "wrap_help"] }

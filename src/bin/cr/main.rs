@@ -1,7 +1,14 @@
-// use clap::Parser;
+//! # Cleanroom
+//!
+//! Cleanroom is a CLI program to manage shell environments.
+
+#![deny(missing_docs)]
+
 use thiserror::Error;
 
+mod args;
 mod cfg;
+mod cmds;
 
 #[cfg(test)]
 mod tests;
@@ -14,30 +21,26 @@ fn main() -> Result<(), CRMainErr> {
 enum CRMainErr {
 	#[error("XDG -> {0}")]
 	XDG(xdg::BaseDirectoriesError),
+	#[error("Cfg -> {0}")]
+	Cfg(cfg::CfgErr),
 }
 
 fn cr_main() -> Result<(), CRMainErr> {
-	let cmd_new = clap::Command::new("new").about("Create a new environment");
-	let cmd_use = clap::Command::new("use").about("Start using an environment");
-
-	let cmd_main = clap::Command::new(env!("CARGO_CRATE_NAME"))
-		.version(env!("CARGO_PKG_VERSION"))
-		.about(env!("CARGO_PKG_DESCRIPTION"))
-		.args([clap::Arg::new("inherit")
-			.short('I')
-			.long("inherit")
-			.help("Whether to use inheritance")])
-		.subcommand(cmd_new)
-		.subcommand(cmd_use)
-		.get_matches();
-
-	let dirs = match xdg::BaseDirectories::with_prefix("cleanroom") {
+	let args = args::CmdMain::from_parse();
+	let dirs = match xdg::BaseDirectories::with_prefix(env!("CARGO_PKG_NAME")) {
 		Ok(ok) => ok,
 		Err(err) => return Err(CRMainErr::XDG(err)),
 	};
+	let cfg = match cfg::Cfg::from(args, dirs) {
+		Ok(ok) => ok,
+		Err(err) => return Err(CRMainErr::Cfg(err)),
+	};
 
-	let _ = cmd_main;
-	let _ = dirs;
+	match cfg.args.sub {
+		args::CmdMainSub::New { name: _ } => {
+			cmds::new(cfg);
+		}
+	}
 
 	Ok(())
 }
