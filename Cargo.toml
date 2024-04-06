@@ -2,6 +2,7 @@
 name = "cleanroom"
 version = "0.0.0"
 edition = "2021"
+repository = "https://git.vexd.dev/bloated/cleanroom"
 authors = ["creightor"]
 description = "Shell environment manager"
 readme = "README.md"
