@@ -1,0 +1,15 @@
+[package]
+name = "cleanroom"
+version = "0.0.0"
+edition = "2021"
+authors = ["creightor"]
+description = "Shell environment manager"
+readme = "README.md"
+license-file = "LICENSE"
+keywords = ["cli", "shell", "terminal", "environment", "manager"]
+categories = ["command-line-utilities", "virtualization"]
+
+[dependencies]
+thiserror = "1"
+xdg = "2"
+clap = { version = "4", features = ["derive"] }
