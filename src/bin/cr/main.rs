@@ -14,15 +14,23 @@ mod cmds;
 mod tests;
 
 fn main() -> Result<(), CRMainErr> {
-	cr_main()
+	match cr_main() {
+		Ok(ok) => Ok(ok),
+		Err(err) => {
+			eprintln!("Error: {err}");
+			Err(err)
+		}
+	}
 }
 
 #[derive(Debug, Error)]
 enum CRMainErr {
-	#[error("XDG -> {0}")]
-	XDG(xdg::BaseDirectoriesError),
-	#[error("Cfg -> {0}")]
-	Cfg(cfg::CfgErr),
+	#[error(transparent)]
+	XDG(#[from] xdg::BaseDirectoriesError),
+	#[error(transparent)]
+	Cfg(#[from] cfg::Err),
+	#[error(transparent)]
+	Cmd(#[from] cmds::Err),
 }
 
 fn cr_main() -> Result<(), CRMainErr> {
@@ -38,9 +46,10 @@ fn cr_main() -> Result<(), CRMainErr> {
 
 	match cfg.args.sub {
 		args::CmdMainSub::New { name: _ } => {
-			cmds::new(cfg);
+			if let Err(err) = cmds::new(cfg) {
+				return Err(CRMainErr::Cmd(err));
+			}
 		}
 	}
-
 	Ok(())
 }

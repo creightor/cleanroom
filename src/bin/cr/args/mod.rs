@@ -19,7 +19,7 @@ pub enum CmdMainSub {
 	New {
 		/// Environment name
 		#[arg(short, long)]
-		name: String,
+		name: Option<String>,
 	},
 }
 

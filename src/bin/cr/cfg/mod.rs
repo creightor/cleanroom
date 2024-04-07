@@ -10,13 +10,13 @@ pub struct Cfg {
 }
 
 #[derive(Debug, Error)]
-pub enum CfgErr {}
+pub enum Err {}
 
 impl Cfg {
 	pub fn from(
 		args: crate::args::CmdMain,
 		dirs: xdg::BaseDirectories,
-	) -> Result<Self, CfgErr> {
+	) -> Result<Self, Err> {
 		Ok(Cfg { args, dirs })
 	}
 }
