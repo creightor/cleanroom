@@ -4,11 +4,15 @@
 
 #![deny(missing_docs)]
 
+use std::backtrace;
+
 use thiserror::Error;
 
 mod args;
 mod cfg;
 mod cmds;
+mod debug;
+mod files;
 
 #[cfg(test)]
 mod tests;
@@ -46,7 +50,13 @@ fn cr_main() -> Result<(), CRMainErr> {
 
 	match cfg.args.sub {
 		args::CmdMainSub::New { name: _ } => {
-			if let Err(err) = cmds::new(cfg) {
+			if let Err(err) = cmds::cmd_new(cfg) {
+				return Err(CRMainErr::Cmd(err));
+			}
+		}
+
+		args::CmdMainSub::Use { name: _ } => {
+			if let Err(err) = cmds::cmd_use(cfg) {
 				return Err(CRMainErr::Cmd(err));
 			}
 		}

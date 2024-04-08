@@ -18,6 +18,17 @@ pub enum CmdMainSub {
 	/// Create a new environment
 	New {
 		/// Environment name
+		///
+		/// TODO: If not entered, generate a random name.
+		#[arg(short, long)]
+		name: Option<String>,
+	},
+
+	/// Start using an environment
+	Use {
+		/// Environment name
+		///
+		/// TODO: If not entered and there is only one, use that one.
 		#[arg(short, long)]
 		name: Option<String>,
 	},
