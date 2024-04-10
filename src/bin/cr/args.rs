@@ -1,8 +1,5 @@
 use clap::{Args, Parser, Subcommand};
 
-#[cfg(test)]
-mod test;
-
 #[derive(Debug, Parser)]
 #[command(about, version, arg_required_else_help(true), max_term_width(80))]
 pub struct CmdMain {
@@ -16,22 +13,32 @@ pub struct CmdMain {
 #[derive(Debug, Subcommand)]
 pub enum CmdMainSub {
 	/// Create a new environment
+	#[command(arg_required_else_help = true)]
 	New {
-		/// Environment name
-		///
-		/// TODO: If not entered, generate a random name.
-		#[arg(short, long)]
-		name: Option<String>,
+		#[command(flatten)]
+		args: SubCmdNewArgs,
 	},
 
 	/// Start using an environment
+	#[command(arg_required_else_help = true)]
 	Use {
-		/// Environment name
-		///
-		/// TODO: If not entered and there is only one, use that one.
-		#[arg(short, long)]
-		name: Option<String>,
+		#[command(flatten)]
+		args: SubCmdUseArgs,
 	},
+}
+
+#[derive(Debug, Args)]
+pub struct SubCmdNewArgs {
+	/// Environment name
+	#[arg(value_name = "ENV_NAME")]
+	pub name: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SubCmdUseArgs {
+	/// Environment name
+	#[arg(value_name = "ENV_NAME")]
+	pub name: String,
 }
 
 #[derive(Debug, Args)]

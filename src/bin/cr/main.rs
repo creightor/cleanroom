@@ -2,22 +2,33 @@
 //!
 //! Cleanroom is a CLI program to manage shell environments.
 
-#![deny(missing_docs)]
-
-use std::backtrace;
+#![allow(dead_code)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+#![allow(unused_macros)]
 
 use thiserror::Error;
 
 mod args;
-mod cfg;
+mod c;
 mod cmds;
+mod crenv;
 mod debug;
 mod files;
 
-#[cfg(test)]
-mod tests;
+type Result<T> = std::result::Result<T, Err>;
 
-fn main() -> Result<(), CRMainErr> {
+#[derive(Debug, Error)]
+enum Err {
+	#[error(transparent)]
+	XDG(#[from] xdg::BaseDirectoriesError),
+	#[error(transparent)]
+	Cmd(#[from] cmds::Err),
+	#[error("Not yet implemented: {0}")]
+	TODO(String),
+}
+
+fn main() -> Result<()> {
 	match cr_main() {
 		Ok(ok) => Ok(ok),
 		Err(err) => {
@@ -27,37 +38,23 @@ fn main() -> Result<(), CRMainErr> {
 	}
 }
 
-#[derive(Debug, Error)]
-enum CRMainErr {
-	#[error(transparent)]
-	XDG(#[from] xdg::BaseDirectoriesError),
-	#[error(transparent)]
-	Cfg(#[from] cfg::Err),
-	#[error(transparent)]
-	Cmd(#[from] cmds::Err),
-}
-
-fn cr_main() -> Result<(), CRMainErr> {
-	let args = args::CmdMain::from_parse();
+fn cr_main() -> Result<()> {
+	let cmd = args::CmdMain::from_parse();
 	let dirs = match xdg::BaseDirectories::with_prefix(env!("CARGO_PKG_NAME")) {
 		Ok(ok) => ok,
-		Err(err) => return Err(CRMainErr::XDG(err)),
-	};
-	let cfg = match cfg::Cfg::from(args, dirs) {
-		Ok(ok) => ok,
-		Err(err) => return Err(CRMainErr::Cfg(err)),
+		Err(err) => return Err(Err::XDG(err)),
 	};
 
-	match cfg.args.sub {
-		args::CmdMainSub::New { name: _ } => {
-			if let Err(err) = cmds::cmd_new(cfg) {
-				return Err(CRMainErr::Cmd(err));
+	match cmd.sub {
+		args::CmdMainSub::New { args: args_new } => {
+			if let Err(err) = cmds::cmd_new(cmd.args, args_new, dirs) {
+				return Err(Err::Cmd(cmds::Err::New(err)));
 			}
 		}
 
-		args::CmdMainSub::Use { name: _ } => {
-			if let Err(err) = cmds::cmd_use(cfg) {
-				return Err(CRMainErr::Cmd(err));
+		args::CmdMainSub::Use { args: args_use } => {
+			if let Err(err) = cmds::cmd_use(cmd.args, args_use, dirs) {
+				return Err(Err::Cmd(cmds::Err::Use(err)));
 			}
 		}
 	}

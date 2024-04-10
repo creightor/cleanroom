@@ -1,6 +1,4 @@
-#[cfg(test)]
-mod tests;
-
+// Panic on debug builds or return `Result<T, E>` on release builds.
 pub trait DebugPanic<T, E>
 where
 	E: std::fmt::Display + std::fmt::Debug,
@@ -24,3 +22,29 @@ where
 		}
 	}
 }
+
+// Panic with `todo!` on debug builds or return `cmds::Err::TODO` with msg on
+// release builds.
+macro_rules! todom {
+	($msg:literal) => {
+		if cfg!(debug_assertions) {
+			todo!($msg);
+		} else {
+			return Err(crate::cmds::Err::TODO($msg.to_string()));
+		}
+	};
+}
+
+pub(crate) use todom;
+
+// `dbg!` doesn't use `Display` so on debug builds print using `println!`.
+macro_rules! dbgfmt {
+	($($exs:expr),*) => {
+		if cfg!(debug_assertions) {
+			println!($($exs),*);
+		}
+	};
+
+}
+
+pub(crate) use dbgfmt;

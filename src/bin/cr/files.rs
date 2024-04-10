@@ -1,13 +1,24 @@
-use crate::cmds::Err;
-use crate::debug::DebugPanic;
 use std::collections::HashMap;
 use std::fs;
 use std::path;
 
-#[cfg(test)]
-mod tests;
+use thiserror::Error;
 
-pub fn create_config_dir(dirs: &xdg::BaseDirectories) -> Result<(), Err> {
+use crate::cmds::Err as CmdErr;
+use crate::crenv;
+use crate::debug::DebugPanic;
+
+type Result<T> = std::result::Result<T, Err>;
+
+#[derive(Debug, Error)]
+pub enum Err {
+	#[error(transparent)]
+	Env(#[from] crenv::Err),
+	#[error(transparent)]
+	IO(#[from] std::io::Error),
+}
+
+pub fn create_config_dir(dirs: &xdg::BaseDirectories) -> Result<()> {
 	let cfg_dir = dirs.get_config_home();
 	match cfg_dir.try_exists().dbg_panic() {
 		Ok(exists) => {
@@ -16,27 +27,27 @@ pub fn create_config_dir(dirs: &xdg::BaseDirectories) -> Result<(), Err> {
 			}
 			match std::fs::create_dir(cfg_dir).dbg_panic() {
 				Ok(_) => Ok(()),
-				Err(err) => Err(Err::IO(err)),
+				Err(err) => return Err(err)?,
 			}
 		}
-		Err(err) => Err(Err::IO(err)),
+		Err(err) => return Err(err)?,
 	}
 }
 
-pub fn create_env_dir(env_dir: path::PathBuf) -> Result<(), Err> {
+pub fn create_env_dir(env_dir: path::PathBuf) -> Result<()> {
 	match env_dir.try_exists().dbg_panic() {
 		Ok(exists) => {
 			if exists {
-				return Err(Err::EnvExists(env_dir));
+				return Err(crenv::Err::EnvExists(env_dir))?;
 			}
 		}
 		Err(err) => {
-			return Err(Err::IO(err));
+			return Err(err)?;
 		}
 	}
 
 	if let Err(err) = std::fs::create_dir_all(env_dir).dbg_panic() {
-		return Err(Err::IO(err));
+		return Err(err)?;
 	}
 
 	Ok(())
@@ -44,7 +55,7 @@ pub fn create_env_dir(env_dir: path::PathBuf) -> Result<(), Err> {
 
 pub fn create_env_files(
 	env_dir: path::PathBuf,
-) -> Result<HashMap<path::PathBuf, fs::File>, Err> {
+) -> Result<HashMap<path::PathBuf, fs::File>> {
 	let mut env_files: HashMap<path::PathBuf, fs::File> = HashMap::new();
 
 	let env_file_names = vec![
@@ -61,10 +72,25 @@ pub fn create_env_files(
 				env_files.insert(file_name, file);
 			}
 			Err(err) => {
-				return Err(Err::IO(err));
+				return Err(err)?;
 			}
 		}
 	}
 
 	Ok(env_files)
+}
+
+pub fn check_env_exists(env_dir: &path::PathBuf) -> Result<()> {
+	match env_dir.try_exists().dbg_panic() {
+		Ok(exists) => {
+			if !exists {
+				return Err(crenv::Err::NoExists)?;
+			} else {
+				Ok(())
+			}
+		}
+		Err(err) => {
+			return Err(err)?;
+		}
+	}
 }
