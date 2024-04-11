@@ -6,11 +6,13 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 #![allow(unused_macros)]
+#![allow(unused_mut)]
+
+use std::env;
 
 use thiserror::Error;
 
 mod args;
-mod c;
 mod cmds;
 mod crenv;
 mod debug;
@@ -24,6 +26,9 @@ enum Err {
 	XDG(#[from] xdg::BaseDirectoriesError),
 	#[error(transparent)]
 	Cmd(#[from] cmds::Err),
+	#[error(transparent)]
+	IO(#[from] std::io::Error),
+
 	#[error("Not yet implemented: {0}")]
 	TODO(String),
 }

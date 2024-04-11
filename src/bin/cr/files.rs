@@ -13,9 +13,12 @@ type Result<T> = std::result::Result<T, Err>;
 #[derive(Debug, Error)]
 pub enum Err {
 	#[error(transparent)]
-	Env(#[from] crenv::Err),
+	Env(#[from] Box<crenv::Err>),
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
+
+	#[error("couldn't convert path to string")]
+	PathToStr,
 }
 
 pub fn create_config_dir(dirs: &xdg::BaseDirectories) -> Result<()> {
@@ -38,7 +41,7 @@ pub fn create_env_dir(env_dir: path::PathBuf) -> Result<()> {
 	match env_dir.try_exists().dbg_panic() {
 		Ok(exists) => {
 			if exists {
-				return Err(crenv::Err::EnvExists(env_dir))?;
+				return Err(Box::new(crenv::Err::EnvExists(env_dir)))?;
 			}
 		}
 		Err(err) => {
@@ -58,13 +61,7 @@ pub fn create_env_files(
 ) -> Result<HashMap<path::PathBuf, fs::File>> {
 	let mut env_files: HashMap<path::PathBuf, fs::File> = HashMap::new();
 
-	let env_file_names = vec![
-		env_dir.join("config.toml"),
-		env_dir.join("pre-src.sh"),
-		env_dir.join("pre-exec.sh"),
-		env_dir.join("post-src.sh"),
-		env_dir.join("post-exec.sh"),
-	];
+	let env_file_names = get_env_file_names(&env_dir);
 
 	for file_name in env_file_names {
 		match fs::File::create_new(&file_name).dbg_panic() {
@@ -84,13 +81,33 @@ pub fn check_env_exists(env_dir: &path::PathBuf) -> Result<()> {
 	match env_dir.try_exists().dbg_panic() {
 		Ok(exists) => {
 			if !exists {
-				return Err(crenv::Err::NoExists)?;
-			} else {
-				Ok(())
+				return Err(Box::new(crenv::Err::NoExists))?;
 			}
 		}
 		Err(err) => {
 			return Err(err)?;
 		}
 	}
+
+	for file in get_env_file_names(&env_dir) {
+		match file.try_exists().dbg_panic() {
+			Ok(exists) => {
+				if !exists {
+					return Err(Box::new(crenv::Err::NoExistsEnvFile(file)))?;
+				}
+			}
+			Err(err) => {
+				return Err(err)?;
+			}
+		}
+	}
+
+	Ok(())
+}
+
+fn get_env_file_names(env_dir: &path::PathBuf) -> Vec<path::PathBuf> {
+	vec!["config.toml"]
+		.iter()
+		.map(|file_basename| env_dir.join(file_basename))
+		.collect()
 }

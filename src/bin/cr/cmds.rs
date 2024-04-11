@@ -17,6 +17,7 @@ pub enum Err {
 	Use(#[from] cmd_use::Err),
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
+
 	#[error("Wrong function for subcommand")]
 	SubCmdMatch,
 }
