@@ -25,6 +25,8 @@ pub enum Err {
 	IO(#[from] std::io::Error),
 	#[error(transparent)]
 	VarErr(#[from] std::env::VarError),
+	#[error(transparent)]
+	TOMLSerializeErr(#[from] toml::ser::Error),
 
 	#[error("Couldn't convert path to string.")]
 	PathToStr,
@@ -64,7 +66,8 @@ fn create_new_dir(dir: &path::PathBuf) -> Result<()> {
 	match dir.try_exists().dbg_panic() {
 		Ok(exists) => {
 			if exists {
-				return Err(Box::new(crenv::Err::EnvExists(dir.clone()))).dbg_panic()?;
+				return Err(Box::new(crenv::Err::EnvExists(dir.clone())))
+					.dbg_panic()?;
 			}
 		}
 		Err(err) => {
@@ -83,6 +86,12 @@ pub fn create_env_files(name: &str, dirs: &xdg::BaseDirectories) -> Result<()> {
 	for env_cfg_file_name in env_cfg_file_names {
 		fs::File::create_new(&env_cfg_file_name).dbg_panic()?;
 	}
+
+	fs::write(
+		env_cfg_dir.join("config.toml"),
+		toml::to_string_pretty(&crenv::Table::new())?,
+	)?;
+
 	Ok(())
 }
 

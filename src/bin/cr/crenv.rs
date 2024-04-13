@@ -7,7 +7,7 @@ use std::fs;
 use std::os;
 use std::path;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::debug::{dbgfmt, DebugPanic};
@@ -49,7 +49,7 @@ pub enum Err {
 	BinChanged(path::PathBuf, path::PathBuf, path::PathBuf),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default = "default_table")]
 pub struct Table {
 	pub shell: TableShell,
@@ -66,6 +66,10 @@ fn default_table() -> Table {
 }
 
 impl Table {
+	pub fn new() -> Self {
+		default_table()
+	}
+
 	/// Deserialize from the environment's config.toml.
 	pub fn from_env(name: &str, dirs: &xdg::BaseDirectories) -> Result<Self> {
 		let env_cfg_home = dirs.get_config_home();
@@ -118,7 +122,7 @@ impl Table {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default = "default_table_shell")]
 // TODO: add field for prompt and use it as a template to generate the prompt.
 pub struct TableShell {
@@ -139,7 +143,7 @@ fn default_table_shell() -> TableShell {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default = "default_table_vars")]
 // TODO: Add field `clear: bool` if environment variables should be cleared.
 pub struct TableVars {
@@ -200,7 +204,7 @@ impl TableVars {
 	}
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(default = "default_table_bin")]
 pub struct TableBin {
 	/// Directories to add to PATH.

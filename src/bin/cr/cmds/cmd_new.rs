@@ -1,6 +1,5 @@
 use super::Err as CmdErr;
 use crate::args;
-use crate::debug::todom;
 use crate::debug::DebugPanic;
 use crate::files;
 use thiserror::Error;
@@ -13,11 +12,13 @@ pub enum Err {
 	Files(#[from] files::Err),
 }
 
-pub fn cmd_new(args_main: args::CmdMainArgs, args_new: args::SubCmdNewArgs, dirs: xdg::BaseDirectories) -> Result<()> {
+pub fn cmd_new(
+	args_main: args::CmdMainArgs,
+	args_new: args::SubCmdNewArgs,
+	dirs: xdg::BaseDirectories,
+) -> Result<()> {
 	files::create_env_dirs(&args_new.name, &dirs)?;
 	files::create_env_files(&args_new.name, &dirs)?;
-
-	println!("Created new environment {}", args_new.name);
 
 	Ok(())
 }
