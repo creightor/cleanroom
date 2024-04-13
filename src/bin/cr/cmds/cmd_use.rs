@@ -25,6 +25,9 @@ pub enum Err {
 	Crenv(#[from] crenv::Err),
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
+
+	#[error("Couldn't convert a `PathBuf` directory to `&str`")]
+	DirToStr,
 }
 
 pub fn cmd_use(
@@ -38,7 +41,8 @@ pub fn cmd_use(
 	let env_data_dir = data_home.join(&args_use.name);
 
 	let env_table = crenv::Table::from_env(&args_use.name, &dirs)?;
-	let mut shell_args: Vec<String> = env_table.get_shell_args(&args_use.name, &dirs)?;
+	let mut shell_args: Vec<String> =
+		env_table.get_shell_args(&args_use.name, &dirs)?;
 
 	dbgfmt!("Using config: {:#?}", env_table);
 	dbgfmt!("Calling with args: {:?}", shell_args);
@@ -46,10 +50,22 @@ pub fn cmd_use(
 
 	let mut shell = process::Command::new(env_table.shell.bin);
 	let mut shell = shell.args(shell_args).env_clear();
+
 	let shell_env_vars = env_table.vars.to_env()?;
 	for (k, v) in shell_env_vars {
 		shell = shell.env(k, v);
 	}
+
+	let shell_path = env_table
+		.bin
+		.inherit_dirs
+		.iter()
+		.map(|dir| dir.to_str())
+		.collect::<Option<Vec<_>>>()
+		.ok_or(Err::DirToStr)?
+		.join(":");
+	shell.env("PATH", shell_path);
+
 	let mut shell = shell.spawn()?;
 	shell.wait()?;
 

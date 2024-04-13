@@ -36,17 +36,14 @@ macro_rules! todom {
 		}
 	};
 }
-
 pub(crate) use todom;
 
 // `dbg!` doesn't use `Display` so on debug builds print using `println!`.
 macro_rules! dbgfmt {
-	($($exs:expr),*) => {
+	($($exs:expr),+) => {
 		if cfg!(debug_assertions) {
-			println!($($exs),*);
+			println!($($exs),+);
 		}
 	};
-
 }
-
 pub(crate) use dbgfmt;

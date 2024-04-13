@@ -4,6 +4,7 @@ use std::cmp;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
+use std::os;
 use std::path;
 
 use serde::Deserialize;
@@ -11,6 +12,7 @@ use thiserror::Error;
 
 use crate::debug::{dbgfmt, DebugPanic};
 use crate::files;
+use crate::macros::pathbuf;
 
 type Result<T> = std::result::Result<T, Err>;
 
@@ -71,14 +73,22 @@ impl Table {
 
 		files::check_env_exists(name, dirs).dbg_panic()?;
 
-		let env_cfg: Table = toml::from_str(&std::fs::read_to_string(env_dir.join("config.toml")).dbg_panic()?).dbg_panic()?;
+		let env_cfg: Table = toml::from_str(
+			&std::fs::read_to_string(env_dir.join("config.toml"))
+				.dbg_panic()?,
+		)
+		.dbg_panic()?;
 
 		Ok(env_cfg)
 	}
 
 	/// Return a `Vec` of arguments to be used for a shell based on the
 	/// environment's config.toml.
-	pub fn get_shell_args(&self, name: &str, dirs: &xdg::BaseDirectories) -> Result<Vec<String>> {
+	pub fn get_shell_args(
+		&self,
+		name: &str,
+		dirs: &xdg::BaseDirectories,
+	) -> Result<Vec<String>> {
 		let env_dir = dirs.get_config_home().join(name);
 		let mut args: Vec<String> = Vec::new();
 
@@ -87,7 +97,11 @@ impl Table {
 		}
 
 		let rc_file = env_dir.join("rc.sh");
-		let rc_file = rc_file.to_str().ok_or(files::Err::PathToStr).dbg_panic()?.to_string();
+		let rc_file = rc_file
+			.to_str()
+			.ok_or(files::Err::PathToStr)
+			.dbg_panic()?
+			.to_string();
 		if !self.shell.norc && self.shell.interactive {
 			args.push("--rcfile".to_string());
 			args.push(rc_file);
@@ -127,6 +141,7 @@ fn default_table_shell() -> TableShell {
 
 #[derive(Debug, Deserialize)]
 #[serde(default = "default_table_vars")]
+// TODO: Add field `clear: bool` if environment variables should be cleared.
 pub struct TableVars {
 	/// Environment variables that will be inherited from the parent process.
 	pub inherit: Vec<String>,
@@ -161,7 +176,9 @@ impl TableVars {
 						env::VarError::NotPresent => {
 							return Err(Err::EnvVarNotPresent(var));
 						}
-						env::VarError::NotUnicode(data) => return Err(Err::EnvVarNotUnicode(data)),
+						env::VarError::NotUnicode(data) => {
+							return Err(Err::EnvVarNotUnicode(data))
+						}
 					},
 				};
 
@@ -186,6 +203,9 @@ impl TableVars {
 #[derive(Debug, Deserialize)]
 #[serde(default = "default_table_bin")]
 pub struct TableBin {
+	/// Directories to add to PATH.
+	pub inherit_dirs: Vec<path::PathBuf>,
+
 	/// List of binaries to inherit from host, if the element starts with '/'
 	/// assume it's an absolute path for the binary, otherwise lookup the path
 	/// and use whatever is the result.
@@ -203,6 +223,7 @@ pub struct TableBin {
 
 fn default_table_bin() -> TableBin {
 	TableBin {
+		inherit_dirs: pathbuf!("/usr/local/bin", "/bin", "/usr/bin"),
 		inherit: Vec::new(),
 		exit_on_change: true,
 		exit_on_not_found: true,
@@ -225,7 +246,12 @@ impl TableBin {
 
 			files::bin_try_exists(&host_bin_abs).dbg_panic()?;
 
-			let env_bin_base = path::PathBuf::from(host_bin.file_name().ok_or(Err::BinTermParent(host_bin.clone())).dbg_panic()?);
+			let env_bin_base = path::PathBuf::from(
+				host_bin
+					.file_name()
+					.ok_or(Err::BinTermParent(host_bin.clone()))
+					.dbg_panic()?,
+			);
 			let env_bin_dir = env_data_dir.join("bin");
 			let env_bin_abs = env_bin_dir.join(env_bin_base);
 
@@ -242,7 +268,10 @@ impl TableBin {
 	// exists, check if it points to `src`, if it doesn't, return an error based
 	// on what `self.exit_on_change` is.
 	fn link(&self, src: &path::PathBuf, target: &path::PathBuf) -> Result<()> {
-		let target_base = target.file_name().ok_or(Err::BinTermParent(target.clone())).dbg_panic()?;
+		let target_base = target
+			.file_name()
+			.ok_or(Err::BinTermParent(target.clone()))
+			.dbg_panic()?;
 
 		if target.try_exists().dbg_panic()? {
 			if !fs::symlink_metadata(target).dbg_panic()?.is_symlink() {
@@ -254,7 +283,12 @@ impl TableBin {
 				cmp::Ordering::Equal => Ok(()),
 				_ => {
 					if self.exit_on_change {
-						Err(Err::BinChanged(path::PathBuf::from(target_base), orig_link, src.clone())).dbg_panic()
+						Err(Err::BinChanged(
+							path::PathBuf::from(target_base),
+							orig_link,
+							src.clone(),
+						))
+						.dbg_panic()
 					} else {
 						Ok(())
 					}
@@ -262,7 +296,7 @@ impl TableBin {
 			}
 		} else {
 			dbgfmt!("Creating symlink {:?} from {:?}", target, src);
-			std::os::unix::fs::symlink(src, target).dbg_panic()?;
+			os::unix::fs::symlink(src, target).dbg_panic()?;
 			Ok(())
 		}
 	}

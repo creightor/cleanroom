@@ -17,6 +17,7 @@ pub mod cmds;
 pub mod crenv;
 mod debug;
 pub mod files;
+pub mod macros;
 
 type Result<T> = std::result::Result<T, Err>;
 
