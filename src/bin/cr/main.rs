@@ -2,11 +2,11 @@
 //!
 //! Cleanroom is a CLI program to manage shell environments.
 
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-#![allow(unused_macros)]
-#![allow(unused_mut)]
+// #![allow(dead_code)]
+// #![allow(unused_variables)]
+// #![allow(unused_imports)]
+// #![allow(unused_macros)]
+// #![allow(unused_mut)]
 
 use std::env;
 
@@ -14,10 +14,11 @@ use thiserror::Error;
 
 pub mod args;
 pub mod cmds;
-pub mod crenv;
 mod debug;
 pub mod files;
 pub mod macros;
+pub mod senv;
+pub mod table;
 
 type Result<T> = std::result::Result<T, Err>;
 
@@ -29,9 +30,6 @@ enum Err {
 	Cmd(#[from] cmds::Err),
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
-
-	#[error("Not yet implemented: {0}")]
-	TODO(String),
 }
 
 fn main() -> Result<()> {

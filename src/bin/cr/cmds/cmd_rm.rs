@@ -1,9 +1,9 @@
-use std::fs;
 use std::io;
 
 use thiserror::Error;
 
 use crate::args;
+use crate::senv;
 
 type Result<T> = std::result::Result<T, Err>;
 
@@ -11,14 +11,16 @@ type Result<T> = std::result::Result<T, Err>;
 pub enum Err {
 	#[error(transparent)]
 	IO(#[from] io::Error),
+	#[error(transparent)]
+	ShellEnv(#[from] senv::Err),
 }
 
 pub fn cmd_rm(
-	args_main: args::CmdMainArgs,
+	_args_main: args::CmdMainArgs,
 	args_rm: args::SubCmdRmArgs,
 	dirs: xdg::BaseDirectories,
 ) -> Result<()> {
-	fs::remove_dir_all(dirs.get_config_home().join(&args_rm.name))?;
-	fs::remove_dir_all(dirs.get_data_home().join(&args_rm.name))?;
+	senv::Senv::new_xdg(&args_rm.name, &dirs)?.rm()?;
+
 	Ok(())
 }

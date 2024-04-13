@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-use crate::crenv;
+use crate::table;
 
 mod cmd_new;
 pub use cmd_new::cmd_new;
@@ -14,7 +14,7 @@ pub use cmd_rm::cmd_rm;
 #[derive(Debug, Error)]
 pub enum Err {
 	#[error(transparent)]
-	Env(#[from] crenv::Err),
+	Env(#[from] table::Err),
 	#[error(transparent)]
 	New(#[from] cmd_new::Err),
 	#[error(transparent)]

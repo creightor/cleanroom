@@ -50,24 +50,24 @@ pub enum Err {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(default = "default_table")]
-pub struct Table {
-	pub shell: TableShell,
-	pub vars: TableVars,
-	pub bin: TableBin,
+#[serde(default = "default_root")]
+pub struct Root {
+	pub shell: Shell,
+	pub vars: Vars,
+	pub bin: Bin,
 }
 
-fn default_table() -> Table {
-	Table {
-		shell: default_table_shell(),
-		vars: default_table_vars(),
-		bin: default_table_bin(),
+fn default_root() -> Root {
+	Root {
+		shell: default_shell(),
+		vars: default_vars(),
+		bin: default_bin(),
 	}
 }
 
-impl Table {
+impl Root {
 	pub fn new() -> Self {
-		default_table()
+		default_root()
 	}
 
 	/// Deserialize from the environment's config.toml.
@@ -75,13 +75,12 @@ impl Table {
 		let env_cfg_home = dirs.get_config_home();
 		let env_dir = env_cfg_home.join(name);
 
-		files::check_env_exists(name, dirs).dbg_panic()?;
+		files::check_env_exists(name, dirs).dp()?;
 
-		let env_cfg: Table = toml::from_str(
-			&std::fs::read_to_string(env_dir.join("config.toml"))
-				.dbg_panic()?,
+		let env_cfg: Self = toml::from_str(
+			&std::fs::read_to_string(env_dir.join("config.toml")).dp()?,
 		)
-		.dbg_panic()?;
+		.dp()?;
 
 		Ok(env_cfg)
 	}
@@ -104,7 +103,7 @@ impl Table {
 		let rc_file = rc_file
 			.to_str()
 			.ok_or(files::Err::PathToStr)
-			.dbg_panic()?
+			.dp()?
 			.to_string();
 		if !self.shell.norc && self.shell.interactive {
 			args.push("--rcfile".to_string());
@@ -123,9 +122,9 @@ impl Table {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(default = "default_table_shell")]
+#[serde(default = "default_shell")]
 // TODO: add field for prompt and use it as a template to generate the prompt.
-pub struct TableShell {
+pub struct Shell {
 	pub bin: String,
 	pub login: bool,
 	pub interactive: bool,
@@ -133,8 +132,8 @@ pub struct TableShell {
 	pub norc: bool,
 }
 
-fn default_table_shell() -> TableShell {
-	TableShell {
+fn default_shell() -> Shell {
+	Shell {
 		bin: String::from("/bin/sh"),
 		login: false,
 		interactive: true,
@@ -144,9 +143,9 @@ fn default_table_shell() -> TableShell {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(default = "default_table_vars")]
+#[serde(default = "default_vars")]
 // TODO: Add field `clear: bool` if environment variables should be cleared.
-pub struct TableVars {
+pub struct Vars {
 	/// Environment variables that will be inherited from the parent process.
 	pub inherit: Vec<String>,
 
@@ -159,15 +158,15 @@ pub struct TableVars {
 	pub set: HashMap<String, String>,
 }
 
-fn default_table_vars() -> TableVars {
-	TableVars {
+fn default_vars() -> Vars {
+	Vars {
 		inherit: Vec::new(),
 		exit_on_missing: true,
 		set: HashMap::new(),
 	}
 }
 
-impl TableVars {
+impl Vars {
 	/// Return the key, value pair for environment variables.
 	pub fn to_env(&self) -> Result<HashMap<String, String>> {
 		let mut vars = HashMap::<String, String>::new();
@@ -178,10 +177,10 @@ impl TableVars {
 					Ok(ok) => ok,
 					Err(err) => match err {
 						env::VarError::NotPresent => {
-							return Err(Err::EnvVarNotPresent(var));
+							return Err(Err::EnvVarNotPresent(var)).dp();
 						}
 						env::VarError::NotUnicode(data) => {
-							return Err(Err::EnvVarNotUnicode(data))
+							return Err(Err::EnvVarNotUnicode(data)).dp();
 						}
 					},
 				};
@@ -191,7 +190,7 @@ impl TableVars {
 		} else {
 			for var in self.inherit.clone() {
 				let val = env::var(var.clone());
-				if let Err(err) = val {
+				if let Err(_) = val {
 					continue;
 				}
 				vars.insert(var, val.unwrap());
@@ -205,8 +204,8 @@ impl TableVars {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(default = "default_table_bin")]
-pub struct TableBin {
+#[serde(default = "default_bin")]
+pub struct Bin {
 	/// Directories to add to PATH.
 	pub inherit_dirs: Vec<path::PathBuf>,
 
@@ -225,8 +224,8 @@ pub struct TableBin {
 	pub exit_on_not_found: bool,
 }
 
-fn default_table_bin() -> TableBin {
-	TableBin {
+fn default_bin() -> Bin {
+	Bin {
 		inherit_dirs: pathbuf!("/usr/local/bin", "/bin", "/usr/bin"),
 		inherit: Vec::new(),
 		exit_on_change: true,
@@ -234,37 +233,33 @@ fn default_table_bin() -> TableBin {
 	}
 }
 
-impl TableBin {
+impl Bin {
 	/// Inherit/Symlink binaries listed in `self.inherit` from the host.
 	pub fn inherit_bins(&self, env_data_dir: &path::PathBuf) -> Result<()> {
 		for host_bin in self.inherit.clone() {
 			let host_bin_abs = match files::bin_get_abs(&host_bin) {
 				Ok(ok) => ok,
 				Err(files::Err::NoExistsBin(bin)) => {
-					return Err(files::Err::NoExistsBin(bin)).dbg_panic()?;
+					return Err(files::Err::NoExistsBin(bin)).dp()?;
 				}
 				Err(err) => {
-					return Err(err).dbg_panic()?;
+					return Err(err).dp()?;
 				}
 			};
 
-			files::bin_try_exists(&host_bin_abs).dbg_panic()?;
+			files::bin_try_exists(&host_bin_abs).dp()?;
 
 			let env_bin_base = path::PathBuf::from(
 				host_bin
 					.file_name()
 					.ok_or(Err::BinTermParent(host_bin.clone()))
-					.dbg_panic()?,
+					.dp()?,
 			);
 			let env_bin_dir = env_data_dir.join("bin");
 			let env_bin_abs = env_bin_dir.join(env_bin_base);
 
-			self.link(&host_bin_abs, &env_bin_abs).dbg_panic()?;
+			self.link(&host_bin_abs, &env_bin_abs).dp()?;
 		}
-		Ok(())
-	}
-
-	fn inherit_bin(host_bin: &path::PathBuf) -> Result<()> {
 		Ok(())
 	}
 
@@ -275,14 +270,14 @@ impl TableBin {
 		let target_base = target
 			.file_name()
 			.ok_or(Err::BinTermParent(target.clone()))
-			.dbg_panic()?;
+			.dp()?;
 
-		if target.try_exists().dbg_panic()? {
-			if !fs::symlink_metadata(target).dbg_panic()?.is_symlink() {
-				return Err(Err::BinNotSymlink(target.clone())).dbg_panic();
+		if target.try_exists().dp()? {
+			if !fs::symlink_metadata(target).dp()?.is_symlink() {
+				return Err(Err::BinNotSymlink(target.clone())).dp();
 			}
 
-			let orig_link = fs::read_link(target).dbg_panic()?;
+			let orig_link = fs::read_link(target).dp()?;
 			match orig_link.cmp(src) {
 				cmp::Ordering::Equal => Ok(()),
 				_ => {
@@ -292,7 +287,7 @@ impl TableBin {
 							orig_link,
 							src.clone(),
 						))
-						.dbg_panic()
+						.dp()
 					} else {
 						Ok(())
 					}
@@ -300,7 +295,7 @@ impl TableBin {
 			}
 		} else {
 			dbgfmt!("Creating symlink {:?} from {:?}", target, src);
-			os::unix::fs::symlink(src, target).dbg_panic()?;
+			os::unix::fs::symlink(src, target).dp()?;
 			Ok(())
 		}
 	}
