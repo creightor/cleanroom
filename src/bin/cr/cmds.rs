@@ -8,6 +8,8 @@ mod cmd_new;
 pub use cmd_new::cmd_new;
 mod cmd_use;
 pub use cmd_use::cmd_use;
+mod cmd_rm;
+pub use cmd_rm::cmd_rm;
 
 #[derive(Debug, Error)]
 pub enum Err {
@@ -18,8 +20,7 @@ pub enum Err {
 	#[error(transparent)]
 	Use(#[from] cmd_use::Err),
 	#[error(transparent)]
+	Rm(#[from] cmd_rm::Err),
+	#[error(transparent)]
 	IO(#[from] std::io::Error),
-
-	#[error("Wrong function for subcommand")]
-	SubCmdMatch,
 }

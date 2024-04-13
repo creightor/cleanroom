@@ -63,6 +63,12 @@ fn cr_main() -> Result<()> {
 				return Err(Err::Cmd(cmds::Err::Use(err)));
 			}
 		}
+
+		args::CmdMainSub::Rm { args: args_rm } => {
+			if let Err(err) = cmds::cmd_rm(cmd.args, args_rm, dirs) {
+				return Err(Err::Cmd(cmds::Err::Rm(err)));
+			}
+		}
 	}
 	Ok(())
 }

@@ -15,18 +15,25 @@ pub struct CmdMain {
 #[derive(Debug, Subcommand)]
 // TODO: Add command for resolving `crenv::Err::BinChanged` conflicts.
 pub enum CmdMainSub {
-	/// Create a new environment
+	/// Create a new environment.
 	#[command(arg_required_else_help = true)]
 	New {
 		#[command(flatten)]
 		args: SubCmdNewArgs,
 	},
 
-	/// Start using an environment
+	/// Start using an environment.
 	#[command(arg_required_else_help = true)]
 	Use {
 		#[command(flatten)]
 		args: SubCmdUseArgs,
+	},
+
+	/// Remove the files and directories created by the `new` sub-command.
+	#[command(arg_required_else_help = true)]
+	Rm {
+		#[command(flatten)]
+		args: SubCmdRmArgs,
 	},
 }
 
@@ -39,6 +46,13 @@ pub struct SubCmdNewArgs {
 
 #[derive(Debug, Args)]
 pub struct SubCmdUseArgs {
+	/// Environment name
+	#[arg(value_name = "ENV_NAME")]
+	pub name: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SubCmdRmArgs {
 	/// Environment name
 	#[arg(value_name = "ENV_NAME")]
 	pub name: String,
