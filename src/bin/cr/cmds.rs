@@ -10,6 +10,8 @@ mod cmd_use;
 pub use cmd_use::cmd_use;
 mod cmd_rm;
 pub use cmd_rm::cmd_rm;
+mod cmd_ls;
+pub use cmd_ls::cmd_ls;
 
 #[derive(Debug, Error)]
 pub enum Err {
@@ -21,6 +23,8 @@ pub enum Err {
 	Use(#[from] cmd_use::Err),
 	#[error(transparent)]
 	Rm(#[from] cmd_rm::Err),
+	#[error(transparent)]
+	Ls(#[from] cmd_ls::Err),
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
 }

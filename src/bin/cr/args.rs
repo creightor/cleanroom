@@ -35,6 +35,12 @@ pub enum CmdMainSub {
 		#[command(flatten)]
 		args: SubCmdRmArgs,
 	},
+
+	/// List environments
+	Ls {
+		#[command(flatten)]
+		args: SubCmdLsArgs,
+	},
 }
 
 #[derive(Debug, Args)]
@@ -56,6 +62,13 @@ pub struct SubCmdRmArgs {
 	/// Environment name
 	#[arg(value_name = "ENV_NAME")]
 	pub name: String,
+}
+
+#[derive(Debug, Args)]
+pub struct SubCmdLsArgs {
+	/// Display the shell
+	#[arg(short = 's', long = "shell", default_value_t = false)]
+	pub shell: bool,
 }
 
 #[derive(Debug, Args)]
