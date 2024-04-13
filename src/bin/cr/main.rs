@@ -12,11 +12,11 @@ use std::env;
 
 use thiserror::Error;
 
-mod args;
-mod cmds;
-mod crenv;
+pub mod args;
+pub mod cmds;
+pub mod crenv;
 mod debug;
-mod files;
+pub mod files;
 
 type Result<T> = std::result::Result<T, Err>;
 

@@ -1,3 +1,5 @@
+//! Macros and `impl`s for debugging.
+
 // Panic on debug builds or return `Result<T, E>` on release builds.
 pub trait DebugPanic<T, E>
 where

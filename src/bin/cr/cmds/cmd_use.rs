@@ -33,34 +33,20 @@ pub fn cmd_use(
 	dirs: xdg::BaseDirectories,
 ) -> Result<()> {
 	let cfg_home = dirs.get_config_home();
-	let env_dir = cfg_home.join(&args_use.name);
-	let cfg_env = crenv::Table::from_env(&args_use.name, &dirs)?;
+	let env_cfg_dir = cfg_home.join(&args_use.name);
+	let data_home = dirs.get_data_home();
+	let env_data_dir = data_home.join(&args_use.name);
 
-	let mut shell_args: Vec<&str> = Vec::new();
-	if cfg_env.shell.noprofile {
-		shell_args.push("--noprofile");
-	}
+	let env_table = crenv::Table::from_env(&args_use.name, &dirs)?;
+	let mut shell_args: Vec<String> = env_table.get_shell_args(&args_use.name, &dirs)?;
 
-	let rc_file = env_dir.join("rc.sh");
-	let rc_file = rc_file.to_str().ok_or(files::Err::PathToStr)?;
-	if !cfg_env.shell.norc && cfg_env.shell.interactive {
-		shell_args.push("--rcfile");
-		shell_args.push(rc_file);
-		shell_args.push("-i");
-	} else {
-		shell_args.push("--norc");
-	}
-
-	if cfg_env.shell.login {
-		shell_args.push("-l");
-	}
-
-	dbgfmt!("Using config: {:#?}", cfg_env);
+	dbgfmt!("Using config: {:#?}", env_table);
 	dbgfmt!("Calling with args: {:?}", shell_args);
+	env_table.bin.inherit_bins(&env_data_dir)?;
 
-	let mut shell = process::Command::new(cfg_env.shell.bin);
+	let mut shell = process::Command::new(env_table.shell.bin);
 	let mut shell = shell.args(shell_args).env_clear();
-	let shell_env_vars = cfg_env.vars.to_env()?;
+	let shell_env_vars = env_table.vars.to_env()?;
 	for (k, v) in shell_env_vars {
 		shell = shell.env(k, v);
 	}

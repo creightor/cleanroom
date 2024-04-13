@@ -1,3 +1,5 @@
+//! Commands to be called after parsing the arguments.
+
 use thiserror::Error;
 
 use crate::crenv;

@@ -1,3 +1,5 @@
+//! Argument parsing.
+
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -11,6 +13,7 @@ pub struct CmdMain {
 }
 
 #[derive(Debug, Subcommand)]
+// TODO: Add command for resolving `crenv::Err::BinChanged` conflicts.
 pub enum CmdMainSub {
 	/// Create a new environment
 	#[command(arg_required_else_help = true)]
