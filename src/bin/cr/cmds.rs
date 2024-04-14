@@ -1,5 +1,7 @@
 //! Commands to be called after parsing the arguments.
 
+use std::io;
+
 use thiserror::Error;
 
 use crate::table;
@@ -13,6 +15,7 @@ pub use cmd_rm::cmd_rm;
 mod cmd_ls;
 pub use cmd_ls::cmd_ls;
 
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum Err {
 	#[error(transparent)]
@@ -26,5 +29,5 @@ pub enum Err {
 	#[error(transparent)]
 	Ls(#[from] cmd_ls::Err),
 	#[error(transparent)]
-	IO(#[from] std::io::Error),
+	IO(#[from] io::Error),
 }

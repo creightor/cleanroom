@@ -2,6 +2,7 @@
 
 use clap::{Args, Parser, Subcommand};
 
+#[non_exhaustive]
 #[derive(Debug, Parser)]
 #[command(about, version, arg_required_else_help(true), max_term_width(80))]
 pub struct CmdMain {
@@ -12,6 +13,7 @@ pub struct CmdMain {
 	pub args: CmdMainArgs,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Subcommand)]
 // TODO: Add command for resolving `crenv::Err::BinChanged` conflicts.
 pub enum CmdMainSub {
@@ -43,6 +45,7 @@ pub enum CmdMainSub {
 	},
 }
 
+#[non_exhaustive]
 #[derive(Debug, Args)]
 pub struct SubCmdNewArgs {
 	/// Environment name
@@ -50,6 +53,7 @@ pub struct SubCmdNewArgs {
 	pub name: String,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Args)]
 pub struct SubCmdUseArgs {
 	/// Environment name
@@ -57,6 +61,7 @@ pub struct SubCmdUseArgs {
 	pub name: String,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Args)]
 pub struct SubCmdRmArgs {
 	/// Environment name
@@ -64,6 +69,7 @@ pub struct SubCmdRmArgs {
 	pub name: String,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Args)]
 pub struct SubCmdLsArgs {
 	/// Display the shell
@@ -81,6 +87,6 @@ pub struct CmdMainArgs {
 
 impl CmdMain {
 	pub fn from_parse() -> Self {
-		CmdMain::parse()
+		Self::parse()
 	}
 }

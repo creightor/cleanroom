@@ -4,20 +4,23 @@
 use std::fs;
 use std::io;
 use std::path;
+use std::result;
 
 use thiserror::Error;
+use toml::ser;
 
 use crate::debug::{dbgfmt, DebugPanic};
 use crate::table;
 
-type Result<T> = std::result::Result<T, Err>;
+type Result<T> = result::Result<T, Err>;
 
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum Err {
 	#[error(transparent)]
 	IO(#[from] io::Error),
 	#[error(transparent)]
-	TOMLSerialize(#[from] toml::ser::Error),
+	TOMLSerialize(#[from] ser::Error),
 
 	#[error("Directory '{1}' doesn't exist for environment '{0}'")]
 	MissingDir(String, path::PathBuf),
@@ -27,12 +30,14 @@ pub enum Err {
 
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 
+#[non_exhaustive]
 #[derive(Eq, Ord, PartialEq, PartialOrd)]
 pub struct Senv {
 	pub name: String,
 	pub files: Files,
 }
 
+#[non_exhaustive]
 #[derive(Eq, Ord, PartialEq, PartialOrd)]
 pub struct Files {
 	pub cfg_dir: path::PathBuf,
@@ -48,7 +53,7 @@ impl Senv {
 		let cfg_file = cfg_dir.join("config.toml");
 		let data_dir = dirs.get_data_home().join(&name);
 		let bin_dir = data_dir.join("bin");
-		Ok(Senv {
+		Ok(Self {
 			name,
 			files: Files {
 				cfg_dir,
@@ -76,7 +81,7 @@ impl Senv {
 		name: &str,
 		dirs: &xdg::BaseDirectories,
 	) -> Result<Self> {
-		Ok(Self::new_xdg(name, dirs).dp()?.create_xdg().dp()?)
+		Self::new_xdg(name, dirs).dp()?.create_xdg().dp()
 	}
 
 	pub fn rm(self) -> Result<()> {
@@ -121,6 +126,11 @@ impl Senv {
 		Ok(())
 	}
 
+	#[allow(
+		clippy::missing_panics_doc,
+		clippy::unwrap_in_result,
+		clippy::unwrap_used
+	)]
 	pub fn get_vec(dirs: &xdg::BaseDirectories) -> Result<Vec<Self>> {
 		let mut shell_envs: Vec<Self> = Vec::new();
 
@@ -145,7 +155,7 @@ impl Senv {
 
 			let file_name = file.file_name();
 			let file_name = file_name.to_str();
-			if let None = file_name {
+			if file_name.is_none() {
 				dbgfmt!(
 					"{}:{} {}",
 					file!(),
@@ -156,13 +166,13 @@ impl Senv {
 			}
 			let file_name = file_name.unwrap();
 
-			let shell_env = Senv::new_xdg(file_name, dirs);
-			if let Err(_) = shell_env {
+			let shell_env = Self::new_xdg(file_name, dirs);
+			if shell_env.is_err() {
 				continue;
 			}
 			let shell_env = shell_env.unwrap();
 
-			if let Err(_) = shell_env.is_valid() {
+			if shell_env.is_valid().is_err() {
 				continue;
 			}
 
