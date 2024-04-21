@@ -35,9 +35,24 @@ pub fn cmd_use(
 	let shell_env = senv::Senv::new_xdg(&args_use.name, dirs)?;
 	let env_table = table::Root::from_env(&args_use.name, dirs)?;
 	let shell_args = env_table.get_shell_args(&args_use.name, dirs)?;
-
 	dbgfmt!("Using config: {:#?}", env_table);
 	dbgfmt!("Calling with args: {:?}", shell_args);
+
+	// Delete `bin` dir and don't return error if it's a "NotFound" error.
+	if shell_env.files.bin_dir.try_exists()? {
+		match std::fs::remove_dir_all(&shell_env.files.bin_dir) {
+			Ok(_) => (),
+			Err(err) => {
+				if let std::io::ErrorKind::NotFound = err.kind() {
+				} else {
+					return Err(Err::IO(err)).dp();
+				}
+			}
+		}
+	}
+
+	std::fs::create_dir_all(&shell_env.files.bin_dir).dp()?;
+
 	env_table.bin.inherit_bins(&shell_env.files.data_dir)?;
 
 	let mut shell = process::Command::new(env_table.shell.bin);

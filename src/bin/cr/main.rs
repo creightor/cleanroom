@@ -23,6 +23,7 @@
 // 	clippy::restriction
 // )]
 // #![allow(
+// 	clippy::blanket_clippy_restriction_lints,
 // 	clippy::must_use_candidate,
 // 	clippy::missing_errors_doc,
 // 	clippy::std_instead_of_core,
@@ -32,7 +33,6 @@
 // 	clippy::question_mark_used,
 // 	clippy::print_stdout,
 // 	clippy::single_call_fn,
-// 	clippy::blanket_clippy_restriction_lints,
 // 	clippy::min_ident_chars,
 // 	clippy::shadow_reuse,
 // 	clippy::pub_with_shorthand,
@@ -81,10 +81,7 @@ fn main() -> Result<()> {
 
 fn cr_main() -> Result<()> {
 	let cmd = args::CmdMain::from_parse();
-	let dirs = match xdg::BaseDirectories::with_prefix(env!("CARGO_PKG_NAME")) {
-		Ok(ok) => ok,
-		Err(err) => return Err(Err::Xdg(err)),
-	};
+	let dirs = xdg::BaseDirectories::with_prefix(env!("CARGO_PKG_NAME"))?;
 
 	match cmd.sub {
 		args::CmdMainSub::New { args: args_new } => {

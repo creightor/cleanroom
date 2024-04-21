@@ -1,0 +1,39 @@
+.Dd $Mdocdate$
+.Dt CR 1
+.Os
+.Sh NAME
+.Nm cr
+.Nd manage shell environments
+.Sh SYNOPSIS
+.Nm
+.Op ARGS
+.Ar <SUBCMD>
+.Op SUBCMD_ARGS
+.Sh DESCRIPTION
+.Nm
+manages shell environments which are created by configuring a
+.Pa config.toml
+file for the environment.
+These are the flags for the top-level command.
+.Fl h
+.Sh SUBCMD
+.Ss help
+List all the sub-commands when no arguments are given and show the full
+description of a sub-command if a sub-command name is given as an argument.
+.\"
+.\" Use either the
+.\" .Sy help
+.\" .Ar name
+.\" sub-command or the
+.\" .Fl -help
+.\" flag for a sub-command to print their full description.
+.\" .Ss new
+.\" Create a new environment.
+.\"
+.\" Bl -item -offset 4n
+.\" It
+.\" Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum
+.\" dolor sit amet Lorem ipsum dolor sit amet Lorem ipsum dolor sit amet
+.\" .It
+.\" Lorem ipsum dolor sit amet
+.\" .El

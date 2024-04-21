@@ -1,5 +1,6 @@
 //! Structs that are deserialized from the `config.toml` config file.
 
+use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::{cmp, env, ffi, fs, io, os, path, result};
 
@@ -51,7 +52,7 @@ pub enum Err {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Root {
 	pub shell: Shell,
@@ -124,7 +125,7 @@ impl Root {
 
 #[allow(clippy::struct_excessive_bools)]
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 // TODO: add field for prompt and use it as a template to generate the prompt.
 pub struct Shell {
@@ -154,7 +155,7 @@ impl Shell {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 // TODO: Add field `clear: bool` if environment variables should be cleared.
 pub struct Vars {
@@ -227,7 +228,7 @@ impl Vars {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Bin {
 	/// Directories to add to PATH.
@@ -237,6 +238,10 @@ pub struct Bin {
 	/// assume it's an absolute path for the binary, otherwise lookup the path
 	/// and use whatever is the result.
 	pub inherit: Vec<path::PathBuf>,
+
+	/// List of binaries to inherit from host, similar to `inherit` except that
+	/// the RHS/2nd value is the name to use in the environment.
+	pub inherit_rename: HashMap<path::PathBuf, path::PathBuf>,
 
 	/// Whether to exit if the binary is already symlinked for the environment
 	/// but points to a different file than what was symlinked to initially.
@@ -259,6 +264,7 @@ impl Bin {
 		Self {
 			inherit_dirs: pathbuf!("/usr/local/bin", "/bin", "/usr/bin"),
 			inherit: Vec::new(),
+			inherit_rename: HashMap::new(),
 			exit_on_change: true,
 			exit_on_not_found: true,
 		}
@@ -285,6 +291,32 @@ impl Bin {
 					.ok_or(Err::BinTermParent(host_bin.to_owned()))
 					.dp()?,
 			);
+			let env_bin_dir = env_data_dir.join("bin");
+			let env_bin_abs = env_bin_dir.join(env_bin_base);
+
+			self.link(&host_bin_abs, &env_bin_abs).dp()?;
+		}
+
+		for (host_bin, env_bin) in &self.inherit_rename {
+			let host_bin_abs = match files::bin_get_abs(host_bin) {
+				Ok(ok) => ok,
+				Err(files::Err::NoExistsBin(bin)) => {
+					return Err(files::Err::NoExistsBin(bin)).dp()?;
+				}
+				Err(err) => {
+					return Err(err).dp()?;
+				}
+			};
+
+			files::bin_try_exists(&host_bin_abs).dp()?;
+
+			let env_bin_base = path::PathBuf::from(
+				env_bin
+					.file_name()
+					.ok_or(Err::BinTermParent(host_bin.to_owned()))
+					.dp()?,
+			);
+
 			let env_bin_dir = env_data_dir.join("bin");
 			let env_bin_abs = env_bin_dir.join(env_bin_base);
 

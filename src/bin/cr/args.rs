@@ -77,13 +77,10 @@ pub struct SubCmdLsArgs {
 	pub shell: bool,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Args)]
 #[command(about)]
-pub struct CmdMainArgs {
-	/// Disable inheritance
-	#[arg(short = 'I', long, default_value_t = false)]
-	no_inherit: bool,
-}
+pub struct CmdMainArgs;
 
 impl CmdMain {
 	pub fn from_parse() -> Self {

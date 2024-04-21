@@ -1,4 +1,4 @@
-//! Structs and methods for storing and operating on files related to the
+//! Structs and methods for storing and operating on files related to the shell
 //! environments.
 
 use std::fs;
@@ -31,14 +31,14 @@ pub enum Err {
 use std::cmp::{Eq, Ord, PartialEq, PartialOrd};
 
 #[non_exhaustive]
-#[derive(Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Eq, Ord, PartialEq, PartialOrd, Debug)]
 pub struct Senv {
 	pub name: String,
 	pub files: Files,
 }
 
 #[non_exhaustive]
-#[derive(Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Eq, Ord, PartialEq, PartialOrd, Debug)]
 pub struct Files {
 	pub cfg_dir: path::PathBuf,
 	pub cfg_file: path::PathBuf,
@@ -53,6 +53,7 @@ impl Senv {
 		let cfg_file = cfg_dir.join("config.toml");
 		let data_dir = dirs.get_data_home().join(&name);
 		let bin_dir = data_dir.join("bin");
+
 		Ok(Self {
 			name,
 			files: Files {
@@ -81,6 +82,7 @@ impl Senv {
 		name: &str,
 		dirs: &xdg::BaseDirectories,
 	) -> Result<Self> {
+		println!("{:?}", dirs);
 		Self::new_xdg(name, dirs).dp()?.create_xdg().dp()
 	}
 
@@ -116,13 +118,6 @@ impl Senv {
 			.dp();
 		}
 
-		if !self.files.bin_dir.try_exists().dp()? {
-			return Err(Err::MissingDir(
-				self.name.clone(),
-				self.files.bin_dir.clone(),
-			))
-			.dp();
-		}
 		Ok(())
 	}
 
