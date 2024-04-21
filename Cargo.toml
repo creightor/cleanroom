@@ -1,6 +1,6 @@
 [package]
 name = "cleanroom"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 repository = "https://git.vexd.dev/bloated/cleanroom"
 authors = ["creightor"]
