@@ -75,6 +75,7 @@ pub fn cmd_use(
 		.join(":");
 	if !env_table.bin.inherit.is_empty()
 		|| !env_table.bin.inherit_rename.is_empty()
+		|| env_table.bin.coreutils
 	{
 		let env_bin_dir_str = shell_env
 			.files

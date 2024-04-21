@@ -231,6 +231,9 @@ impl Vars {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Bin {
+	/// Whether to bring coreutils into the environment's path.
+	pub coreutils: bool,
+
 	/// Directories to add to PATH.
 	pub inherit_dirs: Vec<path::PathBuf>,
 
@@ -262,6 +265,7 @@ impl Default for Bin {
 impl Bin {
 	pub fn new() -> Self {
 		Self {
+			coreutils: true,
 			inherit_dirs: pathbuf!("/usr/local/bin", "/bin", "/usr/bin"),
 			inherit: Vec::new(),
 			inherit_rename: HashMap::new(),
@@ -322,6 +326,135 @@ impl Bin {
 
 			self.link(&host_bin_abs, &env_bin_abs).dp()?;
 		}
+
+		if self.coreutils {
+			let coreutils = pathbuf![
+				"cat",
+				"tac",
+				"nl",
+				"od",
+				"base32",
+				"base64",
+				"basenc",
+				"fmt",
+				"pr",
+				"fold",
+				"head",
+				"tail",
+				"split",
+				"csplit",
+				"wc",
+				"sum",
+				"cksum",
+				"md5sum",
+				"b2sum",
+				"sha1sum",
+				"sha224sum",
+				"sha256sum",
+				"sha384sum",
+				"sha512sum",
+				"sort",
+				"shuf",
+				"uniq",
+				"comm",
+				"ptx",
+				"tsort",
+				"cut",
+				"paste",
+				"join",
+				"tr",
+				"expand",
+				"unexpand",
+				"ls",
+				"dir",
+				"vdir",
+				"dircolors",
+				"cp",
+				"dd",
+				"install",
+				"mv",
+				"rm",
+				"shred",
+				"link",
+				"ln",
+				"mkdir",
+				"mkfifo",
+				"mknod",
+				"readlink",
+				"rmdir",
+				"unlink",
+				"chown",
+				"chgrp",
+				"chmod",
+				"touch",
+				"df",
+				"du",
+				"stat",
+				"sync",
+				"trunctate",
+				"echo",
+				"printf",
+				"yes",
+				"false",
+				"true",
+				"test",
+				"expr",
+				"tee",
+				"basename",
+				"dirname",
+				"pathchk",
+				"mktemp",
+				"realpath",
+				"pwd",
+				"stty",
+				"printenv",
+				"tty",
+				"id",
+				"logname",
+				"whoami",
+				"groups",
+				"users",
+				"who",
+				"pinky",
+				"date",
+				"arch",
+				"nproc",
+				"uname",
+				"hostname",
+				"hostid",
+				"uptime",
+				"chcon",
+				"runcon",
+				"chroot",
+				"env",
+				"nice",
+				"nohup",
+				"stdbuf",
+				"timeout",
+				"kill",
+				"sleep",
+				"factor",
+				"numfmt",
+				"seq"
+			];
+
+			for host_util in coreutils {
+				let host_util_abs = match files::bin_get_abs(&host_util) {
+					Ok(ok) => ok,
+					Err(err) => {
+						eprintln!("Couldn't get absolute path for coreutil {host_util:?}: {err}");
+						continue;
+					}
+				};
+				let env_util_abs = env_data_dir.join("bin").join(&host_util);
+
+				if let Err(err) = self.link(&host_util_abs, &env_util_abs) {
+					eprintln!("Couldn't link coreutil {host_util:?}: {err}");
+					continue;
+				}
+			}
+		}
+
 		Ok(())
 	}
 
