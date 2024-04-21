@@ -64,7 +64,7 @@ pub fn cmd_use(
 		shell = shell.env(k, v);
 	}
 
-	let shell_path = env_table
+	let mut shell_path = env_table
 		.bin
 		.inherit_dirs
 		.iter()
@@ -73,6 +73,17 @@ pub fn cmd_use(
 		.ok_or(Err::DirToStr)
 		.dp()?
 		.join(":");
+	if !env_table.bin.inherit.is_empty()
+		|| !env_table.bin.inherit_rename.is_empty()
+	{
+		let env_bin_dir_str = shell_env
+			.files
+			.bin_dir
+			.to_str()
+			.ok_or(Err::DirToStr)?
+			.to_owned();
+		shell_path = env_bin_dir_str + ":" + &shell_path;
+	}
 	shell.env("PATH", shell_path);
 
 	let mut shell = shell.spawn().dp()?;
