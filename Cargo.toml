@@ -1,6 +1,6 @@
 [package]
 name = "cleanroom"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 repository = "https://git.vexd.dev/bloated/cleanroom"
 authors = ["creightor"]
@@ -17,3 +17,6 @@ clap = { version = "4", features = ["derive", "wrap_help"] }
 libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0"
+
+[dev-dependencies]
+rand = "0.8.5"
